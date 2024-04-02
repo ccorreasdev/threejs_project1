@@ -1,7 +1,6 @@
 //https://cdn.jsdelivr.net/npm/three@v0.163.0/build/three.module.js
 //Imports
 import * as THREE from 'three';
-
 import scene from "./basic/Scene.js";
 import camera from "./basic/Camera.js";
 import renderer from "./basic/Renderer.js";
@@ -43,7 +42,7 @@ cube.name = "cube";
 directionalLight.position.set(-10, 10, 10);
 
 //Add elements to the scene
-scene.add(cube);
+// scene.add(cube);
 scene.add(plane);
 scene.add(ambientLight);
 scene.add(directionalLight);
@@ -56,7 +55,7 @@ camera.position.set(2, 2, 2);
 let mixer;
 let characterObject;
 // Crear una instancia de dat.gui
-const gui = new dat.GUI();
+
 
 // Crear un objeto para almacenar las opciones de animaciones
 const animations = {
@@ -67,9 +66,13 @@ const animations = {
 };
 
 // Agregar un folder para las animaciones
-const animationsFolder = gui.addFolder('Animations');
-const fbxLoader = new FBXLoader();
 
+const fbxLoader = new FBXLoader();
+let animationAction1;
+let animationAction2;
+let animationAction3;
+let animationAction4;
+let animationAction5;
 fbxLoader.load(
     './assets/js/models/characters/XBot/X_Bot.fbx',
     (object) => {
@@ -102,8 +105,12 @@ fbxLoader.load(
         mixer = new THREE.AnimationMixer(object);
         mixer.timeScale = 1;
 
-        loadAnimation('./assets/js/models/characters/XBot/animations/Running.fbx', 'idle');
-
+        loadAnimation('./assets/js/models/characters/XBot/animations/Idle.fbx', 'idle');
+        loadAnimation('./assets/js/models/characters/XBot/animations/Running.fbx', 'running');
+        loadAnimation('./assets/js/models/characters/XBot/animations/Left_Strafe.fbx', 'left');
+        loadAnimation('./assets/js/models/characters/XBot/animations/Right_Strafe.fbx', 'right');
+        loadAnimation('./assets/js/models/characters/XBot/animations/Running_Backward.fbx', 'back');
+        // animationAction2.stop();
 
     },
     (xhr) => {
@@ -115,6 +122,7 @@ fbxLoader.load(
 )
 
 
+
 function loadAnimation(url, animationName) {
     fbxLoader.load(
         url,
@@ -122,13 +130,25 @@ function loadAnimation(url, animationName) {
             console.log(object.animations[0]);
             const animationAction = mixer.clipAction(object.animations[0]);
 
+            if (animationName === "idle") {
+                animationAction1 = animationAction;
+            } else if (animationName === "running") {
+                animationAction2 = animationAction;
+            } else if (animationName === "left") {
+                animationAction4 = animationAction;
+            } else if (animationName === "right") {
+                animationAction3 = animationAction;
+            } else if (animationName === "back") {
+                animationAction5 = animationAction;
+            }
+
             animationAction.setLoop(true);
             // Reproducir la animación automáticamente
             animationAction.play();
 
             console.log(animationAction.isRunning());
             // Agregar la opción de animación al folder
-            animationsFolder.add(animations, animationName);
+
         },
         (xhr) => {
             console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
@@ -146,16 +166,54 @@ function loadAnimation(url, animationName) {
 
 function render() {
     requestAnimationFrame(render);
+    const delta = clock.getDelta(); // clock es una instancia de THREE.Clock
     if (characterObject) {
+
         camera.lookAt(characterObject.position);
         characterController3.update();
+        mixer.update(delta);
+
+
+        const isMoving = characterController3.getIsMoving();
+        console.log("isMoving?: ", isMoving);
+        if (isMoving == 0) {
+            animationAction1.play();
+            animationAction2.stop();
+            animationAction3.stop();
+            animationAction4.stop();
+            animationAction5.stop();
+        } else if (isMoving == 1) {
+            animationAction2.play();
+            animationAction1.stop();
+            animationAction3.stop();
+            animationAction4.stop();
+            animationAction5.stop();
+        } else if (isMoving == 2) {
+            animationAction3.play();
+            animationAction1.stop();
+            animationAction2.stop();
+            animationAction4.stop();
+            animationAction5.stop();
+        } else if (isMoving == 3) {
+            animationAction4.play();
+            animationAction1.stop();
+            animationAction2.stop();
+            animationAction3.stop();
+            animationAction5.stop();
+        } else if (isMoving == 4) {
+            animationAction5.play();
+            animationAction1.stop();
+            animationAction2.stop();
+            animationAction3.stop();
+            animationAction4.stop();
+        }
     }
     characterController1.update();
     characterController2.update();
 
     renderer.render(scene, camera);
-    const delta = clock.getDelta(); // clock es una instancia de THREE.Clock
-    mixer.update(delta);
+
+
 }
 
 render();

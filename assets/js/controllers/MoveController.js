@@ -15,11 +15,11 @@ class MoveController {
         this.velocity.set(0, 0, 0);
 
         if (this.moveState.up) {
-            this.velocity.y += this.VELOCITY * delta;
+            this.velocity.z += this.VELOCITY * delta;
         }
 
         if (this.moveState.down) {
-            this.velocity.y -= this.VELOCITY * delta;
+            this.velocity.z -= this.VELOCITY * delta;
         }
 
         if (this.moveState.left) {
@@ -32,7 +32,7 @@ class MoveController {
 
 
 
-        this.object.translateY(this.velocity.y * delta);
+        this.object.translateZ(this.velocity.z * delta);
         this.object.translateX(this.velocity.x * delta);
     }
 }
