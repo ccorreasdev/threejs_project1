@@ -13,6 +13,7 @@ import MoveController from "./controllers/MoveController.js";
 import CharacterController from "./controllers/CharacterController.js";
 import CustomCharacterController from "./controllers/CustomCharacterController copy.js";
 import { FBXLoader } from "./jsm/loaders/FBXLoader.js";
+import { GLTFLoader } from "./jsm/loaders/GLTFLoader.js";
 
 
 const clock = new THREE.Clock();
@@ -39,17 +40,17 @@ resizing(camera, renderer);
 cube.name = "cube";
 
 //Light settings
-directionalLight.position.set(-10, 10, 10);
+directionalLight.position.set(0, 10, 0);
+ambientLight.position.set(0, 0, 0);
 
 //Add elements to the scene
 // scene.add(cube);
-scene.add(plane);
-scene.add(ambientLight);
-scene.add(directionalLight);
+//scene.add(plane);
+
 
 //Camera settings
-camera.position.set(2, 2, 2);
-
+camera.position.set(0, 2, -10);
+//camera.position.set(0, 0, 10);
 
 //Load FBX Model
 let mixer;
@@ -96,9 +97,10 @@ fbxLoader.load(
         //     }
         // })
         characterObject = object;
+        characterObject.position.y = -6;
         object.scale.set(.01, .01, .01)
         const moveController3 = new MoveController(object);
-        characterController3 = new CustomCharacterController(object, moveController3, keyController1, "s", "w", "a", "d");
+        characterController3 = new CustomCharacterController(object, moveController3, keyController1, "s", "w", "d", "a");
 
         scene.add(object)
 
@@ -121,6 +123,21 @@ fbxLoader.load(
     }
 )
 
+
+fbxLoader.load(
+    './assets/js/models/land/sky-land/source/prueba_land.fbx',
+    (object) => {
+        object.scale.set(10, 10, 10);
+        object.position.y = -100;
+        scene.add(object)
+    },
+    (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+        console.log(error)
+    }
+)
 
 
 function loadAnimation(url, animationName) {
@@ -159,17 +176,48 @@ function loadAnimation(url, animationName) {
     );
 }
 
+const loaderGLTF = new GLTFLoader();
+
+let object2;
+
+loaderGLTF.load(
+    `./assets/js/models/fantasy_landscape/scene.gltf`,
+    function (gltf) {
+        object2 = gltf.scene;
+        object2.position.z = 12;
+        object2.scale.set(5000, 5000, 5000);
+
+        // Recorrer todos los hijos del modelo cargado y desactivar las sombras
+        object2.traverse(function (child) {
+            if (child.isMesh) {
+                // Desactivar las sombras en todas las luces que proyectan sombras
+                child.castShadow = false;
+            }
+        });
+
+        scene.add(object2);
+    }
+);
 
 
 
-
+const cameraDistance = new THREE.Vector3(0, 3, -8);
+scene.add(ambientLight);
+scene.add(directionalLight);
 
 function render() {
     requestAnimationFrame(render);
     const delta = clock.getDelta(); // clock es una instancia de THREE.Clock
     if (characterObject) {
-
+        const relativeCameraPosition = characterObject.position.clone().add(cameraDistance);
+        camera.position.copy(relativeCameraPosition);
         camera.lookAt(characterObject.position);
+        // camera.position.x = 0;
+        // camera.position.y = 0;
+        // camera.position.z = 10;
+
+
+
         characterController3.update();
         mixer.update(delta);
 
