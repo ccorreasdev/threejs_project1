@@ -45,7 +45,7 @@ ambientLight.position.set(0, 0, 0);
 
 //Add elements to the scene
 // scene.add(cube);
-//scene.add(plane);
+scene.add(plane);
 
 
 //Camera settings
@@ -77,6 +77,16 @@ let animationAction5;
 fbxLoader.load(
     './assets/js/models/characters/XBot/X_Bot.fbx',
     (object) => {
+
+        object.traverse(function (child) {
+            if (child.isMesh) {
+                // Asignar un nuevo material con la propiedad emissive
+                const newMaterial = new THREE.MeshStandardMaterial({ emissive: 0x00ff00 }); // Color rojo
+                child.material = newMaterial;
+                child.userData.interactive = true;
+            }
+        });
+
         //Animation
         // mixer = new THREE.AnimationMixer(object)
 
@@ -97,7 +107,7 @@ fbxLoader.load(
         //     }
         // })
         characterObject = object;
-        characterObject.position.y = -6;
+        characterObject.position.y = -7;
         object.scale.set(.01, .01, .01)
         const moveController3 = new MoveController(object);
         characterController3 = new CustomCharacterController(object, moveController3, keyController1, "s", "w", "d", "a");
@@ -123,12 +133,28 @@ fbxLoader.load(
     }
 )
 
+let scenarioElement;
 
 fbxLoader.load(
     './assets/js/models/land/sky-land/source/prueba_land.fbx',
     (object) => {
+
+
+        object.traverse(function (child) {
+            if (child.isMesh) {
+                // Asignar un nuevo material con la propiedad emissive
+                const newMaterial = new THREE.MeshStandardMaterial({ emissive: 0xff0000 }); // Color rojo
+                //child.material = newMaterial;
+                child.userData.interactive = true;
+            }
+        });
+
+
+
         object.scale.set(10, 10, 10);
         object.position.y = -100;
+        object.position.x = 10;
+        scenarioElement = object;
         scene.add(object)
     },
     (xhr) => {
@@ -183,6 +209,11 @@ let object2;
 loaderGLTF.load(
     `./assets/js/models/fantasy_landscape/scene.gltf`,
     function (gltf) {
+
+
+
+
+
         object2 = gltf.scene;
         object2.position.z = 12;
         object2.scale.set(5000, 5000, 5000);
@@ -205,25 +236,112 @@ const cameraDistance = new THREE.Vector3(0, 3, -8);
 scene.add(ambientLight);
 scene.add(directionalLight);
 
+
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+
+// Agrega un listener de eventos para detectar cuando el mouse se mueve
+document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+function onDocumentMouseMove(event) {
+    // Convierte las coordenadas del evento del mouse a coordenadas normalizadas en el rango [-1, 1]
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    camera.position.x = mouse.x;
+    //console.log(mouse)
+
+
+}
+
+let INTERSECTED;
+let isIntersecting;
+let lastPosition = new THREE.Vector3();
+const BOUNCE_FORCE = 0.1;
+
+
 function render() {
     requestAnimationFrame(render);
+
     const delta = clock.getDelta(); // clock es una instancia de THREE.Clock
+
+
+
+
+
+
     if (characterObject) {
+
+
+        //raycaster.setFromCamera(mouse, camera);
+        //const intersects = raycaster.intersectObject(plane);
+        const raycasterOrigin = plane.position.clone();
+        const raycasterDirection = new THREE.Vector3(0, 0, 1); // Hacia abajo
+
+        // Crea el Raycaster
+        const raycaster = new THREE.Raycaster(raycasterOrigin, raycasterDirection);
+
+        const intersects = raycaster.intersectObject(scenarioElement);
+
+        if (intersects.length > 0) {
+            isIntersecting = true;
+            console.log("Character intersect");
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+            plane.material = material;
+
+        } else {
+            isIntersecting = false;
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+            plane.material = material;
+            //console.log(lastPosition);
+        }
+        // if (intersects.length > 0) {
+        //     // console.log("Intersected 0");
+        //     if (INTERSECTED != intersects[0].object) {
+        //         const interactiveObjects = intersects.filter(object => object.object.userData.interactive);
+
+        //         // console.log("Intersected 1");
+        //         if (interactiveObjects.length > 0) {
+        //             //console.log("Intersected 2");
+        //             //if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+
+        //             //INTERSECTED = intersects[0].object;
+        //             //INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+        //             //INTERSECTED.material.emissive.setHex(0x0000ff);
+
+        //         }
+
+        //     } else {
+
+        //         //if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+
+        //         INTERSECTED = null;
+
+        //     }
+
+        // }
+
+
+
         const relativeCameraPosition = characterObject.position.clone().add(cameraDistance);
+        plane.position.copy(characterObject.position);
+        plane.rotation.copy(characterObject.rotation);
         camera.position.copy(relativeCameraPosition);
         camera.lookAt(characterObject.position);
-        // camera.position.x = 0;
+        //camera.rotation.y = mouse.x;
         // camera.position.y = 0;
         // camera.position.z = 10;
 
 
 
+
         characterController3.update();
+
+
         mixer.update(delta);
 
 
         const isMoving = characterController3.getIsMoving();
-        console.log("isMoving?: ", isMoving);
+        //console.log("isMoving?: ", isMoving);
         if (isMoving == 0) {
             animationAction1.play();
             animationAction2.stop();
